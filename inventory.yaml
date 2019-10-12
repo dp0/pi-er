@@ -1,5 +1,0 @@
-all:
-  hosts:
-    mypihostname:
-      vars:
-        ip: 10.0.42.101
