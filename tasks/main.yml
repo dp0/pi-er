@@ -22,7 +22,8 @@
       '{{ (device_files_obj.stdout|from_json).blockdevices }}'
 
 - name: ensure image written to disk
-  command: 'dd "if={{ pi_er_image_file }}" bs=1M status=progress "of={{ pi_er_sd_device }}" oflag=sync'
+  command: 'dd "if={{ pi_er_image_file }}" bs=1M status=progress
+           "of={{ pi_er_sd_device }}" oflag=sync'
   become: yes
 
 - name: ensure filesystem synced
