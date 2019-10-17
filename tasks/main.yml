@@ -26,10 +26,6 @@
            "of={{ pi_er_sd_device }}" oflag=sync'
   become: yes
 
-- name: ensure filesystem synced
-  command: 'sync'
-  become: yes
-
 - name: get list of partitions for newly written disk
   command: 'lsblk -JlpoNAME,LABEL,FSTYPE "{{ pi_er_sd_device }}"'
   register: new_device_files_obj
@@ -60,10 +56,6 @@
     group: root
     owner: root
     mode: 0755
-
-- name: ensure filesystem synced
-  command: 'sync'
-  become: yes
 
 - name: ensure all devices unmounted
   command: 'umount {{ item.name }}'
