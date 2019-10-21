@@ -35,15 +35,15 @@
   register: new_device_files_obj
   changed_when: no
 
-- name: create temp root mount dir
+- name: create temp boot mount dir
   tempfile:
     state: directory
-    suffix: pi_er_sd_root
-  register: root_mount_dir
+    suffix: pi_er_sd_boot
+  register: boot_mount_dir
 
-- name: mount new sd root disk
+- name: mount new sd boot disk
   mount:
-    path: '{{ root_mount_dir.path }}'
+    path: '{{ boot_mount_dir.path }}'
     src: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
       selectattr("label", "equalto", "boot")|
       map(attribute="name")|first }}'
@@ -55,7 +55,7 @@
 - name: ensure ssh enabled
   copy:
     content: ''
-    dest: '{{ root_mount_dir.path }}/ssh'
+    dest: '{{ boot_mount_dir.path }}/ssh'
     force: no
     group: root
     owner: root
