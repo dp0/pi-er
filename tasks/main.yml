@@ -90,6 +90,10 @@
     group: root
     mode: '0644'
 
+- name: ensure filesystem synced
+  command: 'sync'
+  become: yes
+
 - name: ensure all devices unmounted
   command: 'umount {{ item.name }}'
   become: yes
