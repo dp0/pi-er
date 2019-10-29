@@ -58,10 +58,10 @@
   mount:
     path: '{{ root_mount_dir.path }}'
     src: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
-      selectattr("label", "equalto", "root")|
+      selectattr("label", "equalto", "rootfs")|
       map(attribute="name")|first }}'
     fstype: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
-      selectattr("label", "equalto", "root")|
+      selectattr("label", "equalto", "rootfs")|
       map(attribute="fstype")|first }}'
     state: mounted
 
