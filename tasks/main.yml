@@ -38,8 +38,14 @@
 - name: create temp boot mount dir
   tempfile:
     state: directory
-    suffix: pi_er_sd_boot
-  register: boot_mount_dir
+    suffix: "pi_er_sd_boot"
+  register: "boot_mount_dir"
+
+- name: create temp root mount dir
+  tempfile:
+    state: directory
+    suffix: "pi_er_sd_root"
+  register: "root_mount_dir"
 
 - name: mount new sd boot disk
   mount:
@@ -52,6 +58,17 @@
       map(attribute="fstype")|first }}'
     state: mounted
 
+- name: mount new sd root disk
+  mount:
+    path: '{{ root_mount_dir.path }}'
+    src: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
+      selectattr("label", "equalto", "rootfs")|
+      map(attribute="name")|first }}'
+    fstype: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
+      selectattr("label", "equalto", "rootfs")|
+      map(attribute="fstype")|first }}'
+    state: mounted
+
 - name: ensure ssh enabled
   copy:
     content: ''
@@ -59,7 +76,23 @@
     force: no
     group: root
     owner: root
-    mode: 0755
+    mode: '0755'
+
+- name: ensure root user ssh dir exists
+  file:
+    path: '{{ root_mount_dir.path }}/root/.ssh'
+    mode: '0700'
+    owner: root
+    group: root
+    state: directory
+
+- name: ensure root user ssh authorized keys
+  copy:
+    src: '{{ pi_er_pub_key }}'
+    dest: '{{ root_mount_dir.path }}/root/.ssh/authorized_keys'
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: ensure filesystem synced
   command: 'sync'
