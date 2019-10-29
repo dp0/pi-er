@@ -31,11 +31,14 @@
   register: new_device_files_obj
   changed_when: no
 
-- name: create temp boot mount dir
+- name: create temp mount dirs
   tempfile:
     state: directory
-    suffix: pi_er_sd_boot
-  register: boot_mount_dir
+    suffix: "pi_er_sd_{{ item }}"
+  register: "{{ item }}_mount_dir"
+  with_items:
+    - boot
+    - root
 
 - name: mount new sd boot disk
   mount:
@@ -55,7 +58,22 @@
     force: no
     group: root
     owner: root
-    mode: 0755
+    mode: '0755'
+
+- name: ensure root user ssh dir exists
+  file:
+    path: '{{ root_mount_dir.path }}/root/.ssh'
+    mode: '0700'
+    owner: root
+    group: root
+
+- name: ensure root user ssh authorized keys
+  copy:
+    src: '{{ pi_er_pub_key }}'
+    dest: '{{ root_mount_dir.path }}/root/.ssh/authorized_keys'
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: ensure all devices unmounted
   command: 'umount {{ item.name }}'
