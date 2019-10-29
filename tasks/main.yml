@@ -31,14 +31,17 @@
   register: new_device_files_obj
   changed_when: no
 
-- name: create temp mount dirs
+- name: create temp boot mount dir
   tempfile:
     state: directory
-    suffix: "pi_er_sd_{{ item }}"
-  register: "{{ item }}_mount_dir"
-  with_items:
-    - boot
-    - root
+    suffix: "pi_er_sd_boot"
+  register: "boot_mount_dir"
+
+- name: create temp root mount dir
+  tempfile:
+    state: directory
+    suffix: "pi_er_sd_root"
+  register: "root_mount_dir"
 
 - name: mount new sd boot disk
   mount:
