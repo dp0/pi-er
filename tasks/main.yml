@@ -80,6 +80,7 @@
     mode: '0700'
     owner: root
     group: root
+    state: directory
 
 - name: ensure root user ssh authorized keys
   copy:
