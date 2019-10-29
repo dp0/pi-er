@@ -54,6 +54,17 @@
       map(attribute="fstype")|first }}'
     state: mounted
 
+- name: mount new sd root disk
+  mount:
+    path: '{{ root_mount_dir.path }}'
+    src: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
+      selectattr("label", "equalto", "root")|
+      map(attribute="name")|first }}'
+    fstype: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
+      selectattr("label", "equalto", "root")|
+      map(attribute="fstype")|first }}'
+    state: mounted
+
 - name: ensure ssh enabled
   copy:
     content: ''
