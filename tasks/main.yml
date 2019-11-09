@@ -41,71 +41,81 @@
     suffix: "pi_er_sd_boot"
   register: "boot_mount_dir"
 
+- name: provision changes for fresh boot partition
+  block:
+    - name: mount boot partition
+      command: 'mount -t {{ (new_device_files_obj.stdout|from_json)
+                .blockdevices|selectattr("label", "equalto", "boot")|
+                map(attribute="fstype")|first }} {{ (new_device_files_obj
+                .stdout|from_json).blockdevices|selectattr("label", "equalto",
+                "boot")|map(attribute="name")|first }}
+                {{ boot_mount_dir.path }}'
+    - name: ensure ssh enabled
+      copy:
+        content: ''
+        dest: '{{ boot_mount_dir.path }}/ssh'
+        force: no
+        group: root
+        owner: root
+        mode: '0755'
+  always:
+     - name: unmount boot partition
+       command: 'umount {{ boot_mount_dir.path }}'
+       register: result
+       failed_when:
+         - 'result.rc != 0'
+         - '"not mounted" not in result.stderr'
+       changed_when:
+         - 'result.rc == 0'
+     - name: remove temp boot mount dir
+       file:
+         path: '{{ boot_mount_dir.path }}'
+         state: absent
+
+
 - name: create temp root mount dir
   tempfile:
     state: directory
     suffix: "pi_er_sd_root"
   register: "root_mount_dir"
 
-- name: mount new sd boot disk
-  mount:
-    path: '{{ boot_mount_dir.path }}'
-    src: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
-      selectattr("label", "equalto", "boot")|
-      map(attribute="name")|first }}'
-    fstype: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
-      selectattr("label", "equalto", "boot")|
-      map(attribute="fstype")|first }}'
-    state: mounted
-
-- name: mount new sd root disk
-  mount:
-    path: '{{ root_mount_dir.path }}'
-    src: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
-      selectattr("label", "equalto", "rootfs")|
-      map(attribute="name")|first }}'
-    fstype: '{{ (new_device_files_obj.stdout|from_json).blockdevices|
-      selectattr("label", "equalto", "rootfs")|
-      map(attribute="fstype")|first }}'
-    state: mounted
-
-- name: ensure ssh enabled
-  copy:
-    content: ''
-    dest: '{{ boot_mount_dir.path }}/ssh'
-    force: no
-    group: root
-    owner: root
-    mode: '0755'
-
-- name: ensure root user ssh dir exists
-  file:
-    path: '{{ root_mount_dir.path }}/root/.ssh'
-    mode: '0700'
-    owner: root
-    group: root
-    state: directory
-
-- name: ensure root user ssh authorized keys
-  copy:
-    src: '{{ pi_er_pub_key }}'
-    dest: '{{ root_mount_dir.path }}/root/.ssh/authorized_keys'
-    owner: root
-    group: root
-    mode: '0644'
+- name: provision changes for fresh root partition
+  block:
+    - name: mount root partition
+      command: 'mount -t {{ (new_device_files_obj.stdout|from_json)
+                .blockdevices|selectattr("label", "equalto", "rootfs")|
+                map(attribute="fstype")|first }} {{ (new_device_files_obj
+                .stdout|from_json).blockdevices|selectattr("label", "equalto",
+                "rootfs")|map(attribute="name")|first }}
+                {{ root_mount_dir.path }}'
+    - name: ensure root user ssh dir exists
+      file:
+        path: '{{ root_mount_dir.path }}/root/.ssh'
+        mode: '0700'
+        owner: root
+        group: root
+        state: directory
+    - name: ensure root user ssh authorized keys
+      copy:
+        src: '{{ pi_er_pub_key }}'
+        dest: '{{ root_mount_dir.path }}/root/.ssh/authorized_keys'
+        owner: root
+        group: root
+        mode: '0644'
+  always:
+     - name: unmount root partition
+       command: 'umount {{ root_mount_dir.path }}'
+       register: result
+       failed_when:
+         - 'result.rc != 0'
+         - '"not mounted" not in result.stderr'
+       changed_when:
+         - 'result.rc == 0'
+     - name: remove temp root mount dir
+       file:
+         path: '{{ root_mount_dir.path }}'
+         state: absent
 
 - name: ensure filesystem synced
   command: 'sync'
   become: yes
-
-- name: ensure all devices unmounted
-  command: 'umount {{ item.name }}'
-  become: yes
-  register: result
-  failed_when:
-    - 'result.rc != 0'
-    - '"not mounted" not in result.stderr'
-  changed_when:
-    - 'result.rc == 0'
-  with_items:
-      '{{ (new_device_files_obj.stdout|from_json).blockdevices }}'
