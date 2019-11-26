@@ -29,6 +29,7 @@ Example Playbook
   gather_facts: no
   serial: 1
   connection: local
+  become: yes
   tasks:
     - name: provision sd cards
       include_role:
