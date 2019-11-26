@@ -1,0 +1,15 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: ansible-lint
+      uses: ansible/ansible-lint-action@master
+      with:
+        targets: "tasks/main.yml"
