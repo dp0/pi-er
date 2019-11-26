@@ -37,6 +37,7 @@ Example Playbook
       vars:
         pi_er_sd_device: /dev/mmcblk0
         pi_er_image_file: /home/dp0/images/2019-09-26-raspbian-buster-lite.img
+        pi_er_pub_key: /home/dp0/.ssh/id_rsa.pub
 ```
 
 License
