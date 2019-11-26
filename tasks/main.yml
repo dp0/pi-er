@@ -102,6 +102,11 @@
         owner: root
         group: root
         mode: '0644'
+    - name: ensure no password auth
+      lineinfile:
+        dest: '{{ root_mount_dir.path }}/etc/ssh/sshd_config'
+        regexp: '^(#\s*)?PasswordAuthentication '
+        line: 'PasswordAuthentication no'
   always:
      - name: unmount root partition
        command: 'umount {{ root_mount_dir.path }}'
