@@ -1,3 +1,4 @@
+---
 - name: check one host only
   fail:
     msg: Can only provision one host at a time.
@@ -7,11 +8,11 @@
 - name: get list of partitions for disk
   command: 'lsblk -JlpoNAME "{{ pi_er_sd_device }}"'
   register: device_files_obj
-  changed_when: no
+  changed_when: false
 
 - name: ensure all devices unmounted
   command: 'umount {{ item.name }}'
-  become: yes
+  become: true
   register: result
   failed_when:
     - 'result.rc != 0'
@@ -19,21 +20,21 @@
   changed_when:
     - 'result.rc == 0'
   with_items:
-      '{{ (device_files_obj.stdout|from_json).blockdevices }}'
+    '{{ (device_files_obj.stdout|from_json).blockdevices }}'
 
 - name: ensure image written to disk
   command: 'dd "if={{ pi_er_image_file }}" bs=1M
            "of={{ pi_er_sd_device }}" conv=fsync'
-  become: yes
+  become: true
 
 - name: ensure filesystem synced
   command: 'sync'
-  become: yes
+  become: true
 
 - name: get list of partitions for newly written disk
   command: 'lsblk -JlpoNAME,LABEL,FSTYPE "{{ pi_er_sd_device }}"'
   register: new_device_files_obj
-  changed_when: no
+  changed_when: false
 
 - name: create temp boot mount dir
   tempfile:
@@ -54,23 +55,23 @@
       copy:
         content: ''
         dest: '{{ boot_mount_dir.path }}/ssh'
-        force: no
+        force: false
         group: root
         owner: root
         mode: '0755'
   always:
-     - name: unmount boot partition
-       command: 'umount {{ boot_mount_dir.path }}'
-       register: result
-       failed_when:
-         - 'result.rc != 0'
-         - '"not mounted" not in result.stderr'
-       changed_when:
-         - 'result.rc == 0'
-     - name: remove temp boot mount dir
-       file:
-         path: '{{ boot_mount_dir.path }}'
-         state: absent
+    - name: unmount boot partition
+      command: 'umount {{ boot_mount_dir.path }}'
+      register: result
+      failed_when:
+        - 'result.rc != 0'
+        - '"not mounted" not in result.stderr'
+      changed_when:
+        - 'result.rc == 0'
+    - name: remove temp boot mount dir
+      file:
+        path: '{{ boot_mount_dir.path }}'
+        state: absent
 
 
 - name: create temp root mount dir
@@ -108,19 +109,19 @@
         regexp: '^(#\s*)?PasswordAuthentication '
         line: 'PasswordAuthentication no'
   always:
-     - name: unmount root partition
-       command: 'umount {{ root_mount_dir.path }}'
-       register: result
-       failed_when:
-         - 'result.rc != 0'
-         - '"not mounted" not in result.stderr'
-       changed_when:
-         - 'result.rc == 0'
-     - name: remove temp root mount dir
-       file:
-         path: '{{ root_mount_dir.path }}'
-         state: absent
+    - name: unmount root partition
+      command: 'umount {{ root_mount_dir.path }}'
+      register: result
+      failed_when:
+        - 'result.rc != 0'
+        - '"not mounted" not in result.stderr'
+      changed_when:
+        - 'result.rc == 0'
+    - name: remove temp root mount dir
+      file:
+        path: '{{ root_mount_dir.path }}'
+        state: absent
 
 - name: ensure filesystem synced
   command: 'sync'
-  become: yes
+  become: true
