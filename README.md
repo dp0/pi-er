@@ -16,6 +16,9 @@ Role Variables
 
 `pi_er_image_file` - The image to write to the SD card
 
+`pi_er_pub_key` - The SSH public key that can be used to connect to the Pi
+after provisioning.
+
 Dependencies
 ------------
 
