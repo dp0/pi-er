@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -eu
+
+die() {
+    echo "$1" >&2
+    exit 1
+}
+
+ptuuid="${1:-}"
+
+if [ -z "$ptuuid" ]; then
+    die "PTUUID argument missing."
+fi
+
+if ! grep --silent '^[a-fA-F0-9]\{1,\}$' <<<"$ptuuid" ; then
+    die "PTUUID has a bad format."
+fi
+
+devices=()
+while IFS= read -r line; do
+    devices+=( "$line" )
+done < <(
+    lsblk --json --nodeps --output=PATH,PTUUID \
+        | jq -r ".blockdevices[]|select(.ptuuid==\"$ptuuid\")|.path"
+)
+
+if [ "${#devices[@]}" -ne 1 ]; then
+    die "Unique device for PTUUID not found. Got ${#devices[@]} devices."
+fi
+
+echo "${devices[0]}"

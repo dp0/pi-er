@@ -3,7 +3,32 @@
   fail:
     msg: Can only provision one host at a time.
   when:
-    ' play_hosts|length != 1'
+    'play_hosts|length != 1'
+
+- name: check device with ptuuid is present
+  command:
+    argv:
+      - '{{ role_path }}/files/bin/ptuuid-to-dev'
+      - '{{ pi_er_sd_ptuuid }}'
+  register: device_for_ptuuid
+  when: pi_er_sd_ptuuid is defined
+  changed_when: false
+
+- name: check device matches ptuuid
+  fail:
+    msg: Provided ptuuid does not match ptuuid on provided device.
+  when:
+    'pi_er_sd_ptuuid is defined and
+     pi_er_sd_device != device_for_ptuuid.stdout'
+
+- name: wait for acknowledgement if ptuuid has not been used
+  pause:
+    prompt: 'Warning: No PTUUID check has been performed.
+             Will write to "{{ pi_er_sd_device }}".
+
+             Press ENTER to continue'
+  when:
+    'pi_er_sd_ptuuid is not defined'
 
 - name: get list of partitions for disk
   command: 'lsblk -JlpoNAME "{{ pi_er_sd_device }}"'
@@ -11,21 +36,42 @@
   changed_when: false
 
 - name: ensure all devices unmounted
-  command: 'umount {{ item.name }}'
+  command:
+    argv:
+      - 'umount'
+      - '{{ item.name }}'
   become: true
   register: result
   failed_when:
-    - 'result.rc != 0'
-    - '"not mounted" not in result.stderr'
+    'result.rc != 0 and "not mounted" not in result.stderr'
   changed_when:
-    - 'result.rc == 0'
+    'result.rc == 0'
   with_items:
     '{{ (device_files_obj.stdout|from_json).blockdevices }}'
 
 - name: ensure image written to disk
-  command: 'dd "if={{ pi_er_image_file }}" bs=1M
-           "of={{ pi_er_sd_device }}" conv=fsync'
+  command:
+    argv:
+      - 'dd'
+      - 'if={{ pi_er_image_file }}'
+      - 'bs=1M'
+      - 'of={{ pi_er_sd_device }}'
+      - 'conv=fsync'
   become: true
+
+- name: ensure filesystem synced
+  command: 'sync'
+  become: true
+
+- name: ensure ptuuid remains consistent
+  command:
+    argv:
+      - '{{ role_path }}/files/bin/write-ptable'
+      - '{{ pi_er_sd_ptuuid }}'
+      - '{{ pi_er_sd_device }}'
+  become: true
+  when:
+    'pi_er_sd_ptuuid is defined'
 
 - name: ensure filesystem synced
   command: 'sync'
@@ -59,6 +105,7 @@
         group: root
         owner: root
         mode: '0755'
+  become: true
   always:
     - name: unmount boot partition
       command: 'umount {{ boot_mount_dir.path }}'
@@ -108,6 +155,7 @@
         dest: '{{ root_mount_dir.path }}/etc/ssh/sshd_config'
         regexp: '^(#\s*)?PasswordAuthentication '
         line: 'PasswordAuthentication no'
+  become: true
   always:
     - name: unmount root partition
       command: 'umount {{ root_mount_dir.path }}'

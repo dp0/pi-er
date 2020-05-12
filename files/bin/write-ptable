@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -eu
+
+ptuuid="${1:-}"
+device="${2:-}"
+
+die() {
+    echo "$1" >&2
+    exit 1
+}
+
+if ! grep --silent '^[a-fA-F0-9]\{1,\}$' <<<"$ptuuid" ; then
+    die 'PTUUID has a bad format. Only dos disk identifiers are permitted.'
+fi
+
+if [ -z "$device" ]; then
+    die 'Device path argument required but not given.'
+fi
+
+part_table=$(sfdisk -d "$device")
+
+if ! grep --silent '^label: dos$' <<<"$part_table" ; then
+    die 'Only dos partition tables are supported.'
+fi
+
+sed 's/^label-id: .*$/label-id: 0x'"$ptuuid"'/' <<<"$part_table" \
+    | sfdisk "$device"
