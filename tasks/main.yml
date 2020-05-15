@@ -162,6 +162,8 @@
         owner: root
         group: netdev
         mode: 0664
+      when:
+        'pi_er_netconf is defined'
   become: true
   always:
     - name: unmount root partition
