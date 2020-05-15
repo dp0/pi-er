@@ -81,6 +81,11 @@
   command: 'lsblk -JlpoNAME,LABEL,FSTYPE "{{ pi_er_sd_device }}"'
   register: new_device_files_obj
   changed_when: false
+  retries: 20
+  delay: 3
+  until: '["boot", "rootfs"] is subset(
+         (new_device_files_obj.stdout|from_json).blockdevices|map(attribute="label")|list
+         )'
 
 - name: create temp boot mount dir
   tempfile:
