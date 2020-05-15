@@ -22,6 +22,8 @@ card.
 `pi_er_pub_key` - The SSH public key that can be used to connect to the Pi
 after provisioning.
 
+`pi_er_netconf` - (OPTIONAL) The static IP configuration.
+
 Dependencies
 ------------
 
@@ -107,6 +109,27 @@ If you want to retrieve the PTUUID of a device, you can use `fdisk` again:
 $ sudo fdisk -l /dev/sdc | grep identifier
 Disk identifier: 0x9cbe0348
 ```
+
+Static IP Example
+-----------------
+
+Where you want a static IP, you can simply use `pi_er_netconf`, which is a
+dictionary where keys are network interfaces, and values map to dchpcd
+configuration options.
+
+An example of a `pi_er_netconf` setting is:
+```
+pi_er_netconf:
+  eth0:
+    ip: 192.168.0.123/24
+    routers:
+      - 192.168.0.1
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+```
+
+*Hint: the `ip6` option is also available for setting a static IPv6 address.*
 
 License
 -------
